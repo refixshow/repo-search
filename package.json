@@ -1,5 +1,8 @@
 {
   "name": "repo-search",
+  "author": {
+    "name": "Adam Ścieszka"
+  },
   "private": true,
   "version": "0.0.0",
   "type": "module",
