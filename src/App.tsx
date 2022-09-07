@@ -1,9 +1,37 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import { useState, useEffect } from "react";
+import reactLogo from "./assets/react.svg";
+import "./App.css";
+
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+const fetchProjects = (per_page = 10, page = 1, nick: string) => {
+  const endpoint = `https://api.github.com/users/${nick}/repos?per_page=${per_page}&page=${page}`;
+
+  return fetch(endpoint).then((res) => res.json());
+};
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [{ per_page, page }, setPage] = useState({
+    per_page: 10,
+    page: 1,
+  });
+
+  const queryClient = useQueryClient();
+
+  const { data } = useQuery(
+    ["projects", per_page, page],
+    () => fetchProjects(per_page, page, "refixshow"),
+    {
+      keepPreviousData: true,
+      onSuccess: (data: any[]) => {
+        data.forEach((el) => {
+          if (!queryClient.getQueryData(["projects", el.id])) {
+            queryClient.setQueryData(["projects", el.id], el);
+          }
+        });
+      },
+    }
+  );
 
   return (
     <div className="App">
@@ -17,18 +45,20 @@ function App() {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <button
+        onClick={() => {
+          setPage((prev) => ({ ...prev, per_page: 2 }));
+        }}
+      >
+        asasas
+      </button>
+      {JSON.stringify(data, null, 2)}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
