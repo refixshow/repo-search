@@ -21,9 +21,14 @@
     "@tanstack/react-query-persist-client": "^4.2.1",
     "axios": "^0.27.2",
     "framer-motion": "^7.2.1",
+    "lz-string": "^1.4.4",
     "ramda": "^0.28.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.35.0",
+    "react-router-dom": "^6.3.0",
+    "react-toastify": "^9.0.8",
+    "zod": "^3.19.0"
   },
   "devDependencies": {
     "@types/react": "^18.0.17",
