@@ -1,16 +1,15 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Box,
   Center,
   Text,
-  Link,
+  Link as ChakraLink,
   Flex,
   Button,
   Input,
-  ButtonGroup,
 } from "@chakra-ui/react";
 
 const extractFileName = (path: string, base: string) => {
@@ -199,6 +198,11 @@ export const ListRepoFilesContainer = () => {
         <Box>
           <Box position="sticky" top="20px">
             <Box>
+              <ChakraLink>
+                <Link to={`/repos/${params.nick || ""}`}>go back to repos</Link>
+              </ChakraLink>
+            </Box>
+            <Box>
               <Text fontWeight="bold">select your branch</Text>
               <form
                 onSubmit={(e) => {
@@ -211,8 +215,9 @@ export const ListRepoFilesContainer = () => {
                   <Input
                     value={branch}
                     onChange={(e) => setBranchName(e.target.value)}
+                    marginY="10px"
                   />
-                  <Flex gap="5px">
+                  <Flex gap="5px" marginBottom="10px">
                     <Button w="70%" type="submit">
                       submit
                     </Button>
@@ -303,9 +308,12 @@ function ResursiveFileList({
             >
               <Box position="relative">
                 <Text>
-                  <Link target="_blank" href={url(el.path, !!el.children)}>
+                  <ChakraLink
+                    target="_blank"
+                    href={url(el.path, !!el.children)}
+                  >
                     {el.name}
-                  </Link>
+                  </ChakraLink>
                 </Text>
                 <ResursiveFileList
                   trees={el.children}
@@ -344,9 +352,9 @@ function ResursiveFileList({
             }
           >
             <Text>
-              <Link target="_blank" href={url(el.path, !!el.children)}>
+              <ChakraLink target="_blank" href={url(el.path, !!el.children)}>
                 {el.name}
-              </Link>
+              </ChakraLink>
             </Text>
           </Box>
         );
