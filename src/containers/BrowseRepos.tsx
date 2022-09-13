@@ -50,6 +50,7 @@ export const BrowseReposContainer = () => {
         const cachedData = queryClient.getQueryData(["repos", params.nick]);
         if (!cachedData) return;
 
+        // @ts-ignore
         if (cachedData.length === 0) return [];
 
         queryClient.cancelQueries([
@@ -58,6 +59,7 @@ export const BrowseReposContainer = () => {
           config.per_page,
           config.page,
         ]);
+        // @ts-ignore
 
         return cachedData.slice(
           (config.page - 1) * config.per_page,
