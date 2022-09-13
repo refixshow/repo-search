@@ -1,6 +1,6 @@
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 
 export const BrowseReposContainer = () => {
@@ -16,7 +16,7 @@ export const BrowseReposContainer = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!params.nick || params.nick.length < 4)
+    if (!params.nick || params.nick?.length < 4)
       navigate("/users?not_found=true");
   }, []);
 
@@ -45,6 +45,9 @@ export const BrowseReposContainer = () => {
             queryClient.setQueryData(["repos", params.nick, el.name], el);
           }
         });
+      },
+      onError: () => {
+        navigate(`/users/${params.nick}?user_not_found=true`);
       },
       initialData: () => {
         const cachedData = queryClient.getQueryData(["repos", params.nick]);

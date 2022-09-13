@@ -1,7 +1,17 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { useParams } from "react-router-dom";
-import { Box, Center, Text, Link } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  Box,
+  Center,
+  Text,
+  Link,
+  Flex,
+  Button,
+  Input,
+  ButtonGroup,
+} from "@chakra-ui/react";
 
 const extractFileName = (path: string, base: string) => {
   if (base.length === 0) {
@@ -14,6 +24,10 @@ const extractFileName = (path: string, base: string) => {
 
   if (!path.includes("/")) {
     return path;
+  }
+
+  if (path.includes("chakra-ui")) {
+    console.log(path, base);
   }
 
   return path.split(`${base}/`)[1];
@@ -56,7 +70,9 @@ const preprocessRepoFiles = (tree: any[], base = "") => {
 
       const innerResult = preprocessRepoFiles(
         tree.slice(index + 1),
-        current.path.includes("/") ? current.path.split("/")[1] : current.path
+        current.path.includes("/")
+          ? current.path.split(`${base}/`)[1]
+          : current.path
       );
 
       result.push({
@@ -67,6 +83,20 @@ const preprocessRepoFiles = (tree: any[], base = "") => {
 
       index += innerResult.index;
     }
+
+    // sort non trees to top
+    const skipSort = 1;
+    const swap = -1;
+    result.sort((a, b) => {
+      const areBothTrees = a.children && b.children;
+      const isFistTree = a.children && !b.children;
+      const isLastTree = !a.children && b.children;
+
+      if (areBothTrees) return skipSort;
+      if (isFistTree) return skipSort;
+      if (isLastTree) return swap;
+      return skipSort;
+    });
 
     index++;
   }
@@ -86,15 +116,50 @@ const preprocessRepoFiles = (tree: any[], base = "") => {
 // -> -> **
 
 export const ListRepoFilesContainer = () => {
-  // const params = useParams<{ nick: string; repo: string }>();
+  const params = useParams<{ nick: string; repo: string }>();
+  const navigate = useNavigate();
 
   const queryClient = useQueryClient();
 
-  const { data } = useQuery(
-    ["files", "refixshow", "repo-search", "main"],
+  const repos = useQuery(
+    ["repos", params.nick, params.repo],
+    () =>
+      axios(`https://api.github.com/repos/${params.nick}/${params.repo}`, {
+        headers: {
+          // Authorization: "Bearer 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",
+        },
+      }).then((res) => res.data.default_branch),
+    {
+      initialData: () => {
+        const cachedData = queryClient.getQueryData([
+          "repos",
+          params.nick,
+          params.repo,
+        ]);
+        if (!cachedData) return;
+
+        queryClient.cancelQueries(["repos", params.nick, params.repo]);
+
+        return cachedData;
+      },
+      onError: () => {
+        navigate(`/repos/${params.nick}?repo_not_found=true`);
+      },
+    }
+  );
+
+  const [branch, setBranchName] = useState(repos.data || "main");
+  const [finalBranch, setFinalBranchName] = useState(branch);
+
+  useEffect(() => {
+    if (repos.data) setBranchName(repos.data);
+  }, [repos.data]);
+
+  const files = useQuery(
+    ["files", params.nick, params.repo, finalBranch],
     () =>
       axios(
-        `https://api.github.com/repos/refixshow/repo-search/git/trees/main?recursive=1`,
+        `https://api.github.com/repos/${params.nick}/${params.repo}/git/trees/${finalBranch}?recursive=1`,
         {
           // headers: {
           //   Authorization: "Bearer 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",
@@ -105,23 +170,23 @@ export const ListRepoFilesContainer = () => {
       initialData: () => {
         const data = queryClient.getQueryData([
           "files",
-          "refixshow",
-          "repo-search",
-          "main",
+          params.nick,
+          params.repo,
+          finalBranch,
         ]);
 
         if (data) {
           queryClient.cancelQueries([
             "files",
-            "refixshow",
-            "repo-search",
-            "main",
+            params.nick,
+            params.repo,
+            finalBranch,
           ]);
           return queryClient.getQueryData([
             "files",
-            "refixshow",
-            "repo-search",
-            "main",
+            params.nick,
+            params.repo,
+            finalBranch,
           ]);
         }
       },
@@ -129,8 +194,73 @@ export const ListRepoFilesContainer = () => {
   );
 
   return (
-    <Center position="relative">
-      <ResursiveFileList trees={data || []} />
+    <Center position="relative" paddingY="50px">
+      <Flex gap="40px">
+        <Box>
+          <Box position="sticky" top="20px">
+            <Box>
+              <Text fontWeight="bold">select your branch</Text>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (files.isFetching || files.isLoading) return;
+                  setFinalBranchName(branch);
+                }}
+              >
+                <Flex direction="column">
+                  <Input
+                    value={branch}
+                    onChange={(e) => setBranchName(e.target.value)}
+                  />
+                  <Flex gap="5px">
+                    <Button w="70%" type="submit">
+                      submit
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        queryClient.invalidateQueries([
+                          "files",
+                          params.nick,
+                          params.repo,
+                          finalBranch,
+                        ]);
+                      }}
+                      w="100%"
+                      type="button"
+                    >
+                      skip cache
+                    </Button>
+                  </Flex>
+
+                  {(files.isLoading || files.isFetching) && (
+                    <Text>loading</Text>
+                  )}
+                  {files.isError && (
+                    <Text color="red.500">check again your branch name</Text>
+                  )}
+                  {files.isSuccess && (
+                    <Text color="green.500">branch successfully fetched!</Text>
+                  )}
+                </Flex>
+              </form>
+            </Box>
+          </Box>
+        </Box>
+        <Box>
+          <ResursiveFileList
+            trees={files.data || []}
+            url={(path: string, children: boolean) =>
+              createFileUrl(
+                params.nick || "",
+                path,
+                children,
+                params.repo || "",
+                branch
+              )
+            }
+          />
+        </Box>
+      </Flex>
     </Center>
   );
 };
@@ -138,9 +268,11 @@ export const ListRepoFilesContainer = () => {
 function ResursiveFileList({
   trees,
   depth = 0,
+  url,
 }: {
   trees: any[];
   depth?: number;
+  url: (path: string, children: boolean) => string;
 }) {
   return (
     <Box position="relative">
@@ -151,37 +283,35 @@ function ResursiveFileList({
               position="relative"
               key={el.name}
               marginLeft={`${8 * depth}px`}
-              paddingTop="1.5"
+              paddingY="1.5"
               _hover={{
                 _before: {
                   background: "gray.500",
                 },
               }}
               _before={{
-                left: "-8px",
+                top: "5px",
+                left: "-10px",
                 content: '""',
                 position: "absolute",
                 width: "2px",
-                height: "100%",
+                height: "calc(100% - 10px)",
                 background: "gray.300",
+                borderRadius: "4px",
+                zIndex: 1,
               }}
             >
               <Box position="relative">
                 <Text>
-                  <Link
-                    target="_blank"
-                    href={createFileUrl(
-                      "refixshow",
-                      el.path,
-                      !!el.children,
-                      "repo-search",
-                      "main"
-                    )}
-                  >
+                  <Link target="_blank" href={url(el.path, !!el.children)}>
                     {el.name}
                   </Link>
                 </Text>
-                <ResursiveFileList trees={el.children} depth={depth + 1} />
+                <ResursiveFileList
+                  trees={el.children}
+                  depth={depth + 1}
+                  url={url}
+                />
               </Box>
             </Box>
           );
@@ -193,18 +323,28 @@ function ResursiveFileList({
             paddingY="1"
             key={el.name}
             marginLeft={`${8 * depth}px`}
+            _hover={{
+              _before: {
+                bg: "gray.500",
+              },
+            }}
+            _before={
+              depth > 0
+                ? {
+                    content: '""',
+                    width: `${8 * depth + 5}px`,
+                    height: "2px",
+                    bg: "gray.300",
+                    position: "absolute",
+                    top: "50%",
+                    left: `-${8 * depth + 10}px`,
+                    borderRightRadius: "4px",
+                  }
+                : {}
+            }
           >
             <Text>
-              <Link
-                target="_blank"
-                href={createFileUrl(
-                  "refixshow",
-                  el.path,
-                  !!el.children,
-                  "repo-search",
-                  "main"
-                )}
-              >
+              <Link target="_blank" href={url(el.path, !!el.children)}>
                 {el.name}
               </Link>
             </Text>
