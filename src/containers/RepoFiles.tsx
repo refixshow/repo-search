@@ -1,9 +1,34 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useParams } from "react-router-dom";
+import { Box, Center, Text, Link } from "@chakra-ui/react";
 
 const extractFileName = (path: string, base: string) => {
-  return base;
+  if (base.length === 0) {
+    return path;
+  }
+
+  if (!path.includes(base)) {
+    return path;
+  }
+
+  if (!path.includes("/")) {
+    return path;
+  }
+
+  return path.split(`${base}/`)[1];
+};
+
+const createFileUrl = (
+  nick: string,
+  path: string,
+  isTree: boolean,
+  repo: string,
+  branch: string
+) => {
+  return `https://github.com/${nick}/${repo}/${
+    isTree ? "tree" : "blob"
+  }/${branch}/${path}`;
 };
 
 const preprocessRepoFiles = (tree: any[], base = "") => {
@@ -21,7 +46,6 @@ const preprocessRepoFiles = (tree: any[], base = "") => {
         path: current.path,
         name: extractFileName(current.path, base),
         children: null,
-        url: current.url,
       });
     }
 
@@ -39,7 +63,6 @@ const preprocessRepoFiles = (tree: any[], base = "") => {
         path: current.path,
         name: extractFileName(current.path, base),
         children: innerResult.result,
-        url: current.url,
       });
 
       index += innerResult.index;
@@ -63,7 +86,7 @@ const preprocessRepoFiles = (tree: any[], base = "") => {
 // -> -> **
 
 export const ListRepoFilesContainer = () => {
-  const params = useParams<{ nick: string; repo: string }>();
+  // const params = useParams<{ nick: string; repo: string }>();
 
   const queryClient = useQueryClient();
 
@@ -77,7 +100,7 @@ export const ListRepoFilesContainer = () => {
           //   Authorization: "Bearer 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",
           // },
         }
-      ),
+      ).then((res) => preprocessRepoFiles(res.data.tree).result),
     {
       initialData: () => {
         const data = queryClient.getQueryData([
@@ -102,24 +125,92 @@ export const ListRepoFilesContainer = () => {
           ]);
         }
       },
-      onSuccess: (data) => {
-        if (!data) return;
-
-        if (data.data.tree.length === 0) {
-          queryClient.setQueryData(
-            ["files", "refixshow", "repo-search", "main"],
-            []
-          );
-          return;
-        }
-
-        queryClient.setQueryData(
-          ["files", "refixshow", "repo-search", "main"],
-          preprocessRepoFiles(data.data.tree).result
-        );
-      },
     }
   );
 
-  return <div>{JSON.stringify(data, null, 2)} </div>;
+  return (
+    <Center position="relative">
+      <ResursiveFileList trees={data || []} />
+    </Center>
+  );
 };
+
+function ResursiveFileList({
+  trees,
+  depth = 0,
+}: {
+  trees: any[];
+  depth?: number;
+}) {
+  return (
+    <Box position="relative">
+      {trees.map((el) => {
+        if (el.children !== null) {
+          return (
+            <Box
+              position="relative"
+              key={el.name}
+              marginLeft={`${8 * depth}px`}
+              paddingTop="1.5"
+              _hover={{
+                _before: {
+                  background: "gray.500",
+                },
+              }}
+              _before={{
+                left: "-8px",
+                content: '""',
+                position: "absolute",
+                width: "2px",
+                height: "100%",
+                background: "gray.300",
+              }}
+            >
+              <Box position="relative">
+                <Text>
+                  <Link
+                    target="_blank"
+                    href={createFileUrl(
+                      "refixshow",
+                      el.path,
+                      !!el.children,
+                      "repo-search",
+                      "main"
+                    )}
+                  >
+                    {el.name}
+                  </Link>
+                </Text>
+                <ResursiveFileList trees={el.children} depth={depth + 1} />
+              </Box>
+            </Box>
+          );
+        }
+
+        return (
+          <Box
+            position="relative"
+            paddingY="1"
+            key={el.name}
+            marginLeft={`${8 * depth}px`}
+          >
+            <Text>
+              <Link
+                target="_blank"
+                href={createFileUrl(
+                  "refixshow",
+                  el.path,
+                  !!el.children,
+                  "repo-search",
+                  "main"
+                )}
+              >
+                {el.name}
+              </Link>
+            </Text>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
