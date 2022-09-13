@@ -1,3 +1,38 @@
+import { FC, PropsWithChildren } from "react";
+
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      cacheTime: 1000 * 60 * 60 * 24, // 24 hours
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      retry: 1,
+      onError: (err) => {
+        console.log("on err", err.response.status);
+      },
+    },
+  },
+});
+
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+});
+
+export const QueryClientProvider: FC<PropsWithChildren> = ({ children }) => {
+  return (
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister }}
+    >
+      {children}
+    </PersistQueryClientProvider>
+  );
+};
 // https://api.github.com/users/{nick} => { repos_url, avatar_url, login, html_url, public_repos }
 
 // https://api.github.com/users/{nick}/repos ?per_page={items}&page={currentPage} => []{ html_url, name, ssh_url, clone_url, homepage, description, language }
@@ -28,5 +63,3 @@
 
 //   return fetch(endpoint).then((res) => res.json());
 // };
-
-export * from "./tanstack-query";
