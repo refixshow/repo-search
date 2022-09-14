@@ -22,3 +22,9 @@ export type TSingleFile = {
   path: string;
   type: "blob" | "tree";
 };
+
+export type TPreprocessedSingleFile = {
+  path: string;
+  name: string;
+  children: null | TPreprocessedSingleFile[];
+};

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { getUserRepos } from "../lib/axios";
+import { getMultipleUserRepos } from "../lib/axios";
 
 export const BrowseReposContainer = () => {
   const [searchParams] = useSearchParams();
@@ -22,7 +22,7 @@ export const BrowseReposContainer = () => {
 
   const { data } = useQuery(
     ["repos", params.nick, config.per_page, config.page],
-    getUserRepos(params.nick, config.per_page, config.page),
+    getMultipleUserRepos(params.nick, config.per_page, config.page),
     {
       keepPreviousData: true,
       onSuccess: (data) => {

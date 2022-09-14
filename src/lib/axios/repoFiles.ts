@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { TSingleFile, IRepoFiles } from "./types";
+import type { TSingleFile, IRepoFiles, TPreprocessedSingleFile } from "./types";
 
 const extractFileName = (path: string, base: string) => {
   if (base.length === 0) {
@@ -15,17 +15,7 @@ const extractFileName = (path: string, base: string) => {
     return path;
   }
 
-  if (path.includes("chakra-ui")) {
-    console.log(path, base);
-  }
-
   return path.split(`${base}/`)[1];
-};
-
-type TPreprocessedSingleFile = {
-  path: string;
-  name: string;
-  children: null | TPreprocessedSingleFile[];
 };
 
 type TpreprocessRepoFiles = (

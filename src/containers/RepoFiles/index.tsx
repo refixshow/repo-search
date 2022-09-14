@@ -1,4 +1,3 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -11,10 +10,11 @@ import {
   Button,
   Input,
 } from "@chakra-ui/react";
+import { ResursiveFileList } from "../../components/ResursiveFileList";
 
-import { getRepoFiles } from "../../lib/axios";
-
+import { getRepoFiles, getSingleUserRepo } from "../../lib/axios";
 import { createFileUrl } from "./createFileUrl";
+import { IUserRepo, TPreprocessedSingleFile } from "../../lib/axios/types";
 
 export const ListRepoFilesContainer = () => {
   const params = useParams<{ nick: string; repo: string }>();
@@ -24,20 +24,15 @@ export const ListRepoFilesContainer = () => {
 
   const repos = useQuery(
     ["repos", params.nick, params.repo],
-    () =>
-      axios(`https://api.github.com/repos/${params.nick}/${params.repo}`, {
-        headers: {
-          // Authorization: "Bearer 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",
-        },
-      }).then((res) => res.data.default_branch),
+    getSingleUserRepo(params.nick, params.repo),
     {
       initialData: () => {
-        const cachedData = queryClient.getQueryData([
+        const cachedData = queryClient.getQueryData<IUserRepo>([
           "repos",
           params.nick,
           params.repo,
         ]);
-        if (!cachedData) return;
+        if (!cachedData) return null;
 
         queryClient.cancelQueries(["repos", params.nick, params.repo]);
 
@@ -49,20 +44,22 @@ export const ListRepoFilesContainer = () => {
     }
   );
 
-  const [branch, setBranchName] = useState(repos.data || "main");
+  const [branch, setBranchName] = useState(
+    repos.data?.default_branch || "main"
+  );
   const [finalBranch, setFinalBranchName] = useState(branch);
 
   useEffect(() => {
-    if (repos.data) setBranchName(repos.data);
+    if (repos.data?.default_branch) setBranchName(repos.data.default_branch);
   }, [repos.data]);
 
   const files = useQuery(
     ["files", params.nick, params.repo, finalBranch],
     getRepoFiles(params.nick, params.repo, finalBranch),
     {
-      enabled: !!repos.data,
+      enabled: !!repos.data?.default_branch,
       initialData: () => {
-        const data = queryClient.getQueryData([
+        const data = queryClient.getQueryData<TPreprocessedSingleFile[]>([
           "files",
           params.nick,
           params.repo,
@@ -93,8 +90,8 @@ export const ListRepoFilesContainer = () => {
         <Box>
           <Box position="sticky" top="20px">
             <Box>
-              <ChakraLink>
-                <Link to={`/repos/${params.nick || ""}`}>go back to repos</Link>
+              <ChakraLink as={Link} to={`/repos/${params.nick || ""}`}>
+                go back to repos
               </ChakraLink>
             </Box>
             <Box>
@@ -164,96 +161,3 @@ export const ListRepoFilesContainer = () => {
     </Center>
   );
 };
-
-function ResursiveFileList({
-  trees,
-  depth = 0,
-  url,
-}: {
-  trees: any[];
-  depth?: number;
-  url: (path: string, children: boolean) => string;
-}) {
-  return (
-    <Box position="relative">
-      {trees.map((el) => {
-        if (el.children !== null) {
-          return (
-            <Box
-              position="relative"
-              key={el.name}
-              marginLeft={`${8 * depth}px`}
-              paddingY="1.5"
-              _hover={{
-                _before: {
-                  background: "gray.500",
-                },
-              }}
-              _before={{
-                top: "5px",
-                left: "-10px",
-                content: '""',
-                position: "absolute",
-                width: "2px",
-                height: "calc(100% - 10px)",
-                background: "gray.300",
-                borderRadius: "4px",
-                zIndex: 1,
-              }}
-            >
-              <Box position="relative">
-                <Text>
-                  <ChakraLink
-                    target="_blank"
-                    href={url(el.path, !!el.children)}
-                  >
-                    {el.name}
-                  </ChakraLink>
-                </Text>
-                <ResursiveFileList
-                  trees={el.children}
-                  depth={depth + 1}
-                  url={url}
-                />
-              </Box>
-            </Box>
-          );
-        }
-
-        return (
-          <Box
-            position="relative"
-            paddingY="1"
-            key={el.name}
-            marginLeft={`${8 * depth}px`}
-            _hover={{
-              _before: {
-                bg: "gray.500",
-              },
-            }}
-            _before={
-              depth > 0
-                ? {
-                    content: '""',
-                    width: `${8 * depth + 5}px`,
-                    height: "2px",
-                    bg: "gray.300",
-                    position: "absolute",
-                    top: "50%",
-                    left: `-${8 * depth + 10}px`,
-                    borderRightRadius: "4px",
-                  }
-                : {}
-            }
-          >
-            <Text>
-              <ChakraLink target="_blank" href={url(el.path, !!el.children)}>
-                {el.name}
-              </ChakraLink>
-            </Text>
-          </Box>
-        );
-      })}
-    </Box>
-  );
-}
