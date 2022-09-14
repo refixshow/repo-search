@@ -12,107 +12,9 @@ import {
   Input,
 } from "@chakra-ui/react";
 
-const extractFileName = (path: string, base: string) => {
-  if (base.length === 0) {
-    return path;
-  }
+import { getRepoFiles } from "../../lib/axios";
 
-  if (!path.includes(base)) {
-    return path;
-  }
-
-  if (!path.includes("/")) {
-    return path;
-  }
-
-  if (path.includes("chakra-ui")) {
-    console.log(path, base);
-  }
-
-  return path.split(`${base}/`)[1];
-};
-
-const createFileUrl = (
-  nick: string,
-  path: string,
-  isTree: boolean,
-  repo: string,
-  branch: string
-) => {
-  return `https://github.com/${nick}/${repo}/${
-    isTree ? "tree" : "blob"
-  }/${branch}/${path}`;
-};
-
-const preprocessRepoFiles = (tree: any[], base = "") => {
-  const result: any[] = [];
-
-  let index = 0;
-  while (tree.length > index) {
-    const current = tree[index];
-
-    if (current.type === "blob") {
-      if (!current.path.includes(base)) {
-        return { result, index: index };
-      }
-      result.push({
-        path: current.path,
-        name: extractFileName(current.path, base),
-        children: null,
-      });
-    }
-
-    if (current.type === "tree") {
-      if (!current.path.includes(base)) {
-        return { result, index: index };
-      }
-
-      const innerResult = preprocessRepoFiles(
-        tree.slice(index + 1),
-        current.path.includes("/")
-          ? current.path.split(`${base}/`)[1]
-          : current.path
-      );
-
-      result.push({
-        path: current.path,
-        name: extractFileName(current.path, base),
-        children: innerResult.result,
-      });
-
-      index += innerResult.index;
-    }
-
-    // sort non trees to top
-    const skipSort = 1;
-    const swap = -1;
-    result.sort((a, b) => {
-      const areBothTrees = a.children && b.children;
-      const isFistTree = a.children && !b.children;
-      const isLastTree = !a.children && b.children;
-
-      if (areBothTrees) return skipSort;
-      if (isFistTree) return skipSort;
-      if (isLastTree) return swap;
-      return skipSort;
-    });
-
-    index++;
-  }
-
-  return { result, index };
-};
-
-// jeśli blob to tylko dodaje go do arraya
-// --- next
-// jeśli tree
-// to zapisuje sobie nazwe i dodaje go jako base agregator
-// --- next
-// -> jeśli blob to zapisuje go do base agregatora
-// -> --- next
-// -> jeśli tree to zapisuje sobie nazwe i dodaje go jako base agregator
-// -> --- next
-// -> -> **
+import { createFileUrl } from "./createFileUrl";
 
 export const ListRepoFilesContainer = () => {
   const params = useParams<{ nick: string; repo: string }>();
@@ -156,16 +58,9 @@ export const ListRepoFilesContainer = () => {
 
   const files = useQuery(
     ["files", params.nick, params.repo, finalBranch],
-    () =>
-      axios(
-        `https://api.github.com/repos/${params.nick}/${params.repo}/git/trees/${finalBranch}?recursive=1`,
-        {
-          // headers: {
-          //   Authorization: "Bearer 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",
-          // },
-        }
-      ).then((res) => preprocessRepoFiles(res.data.tree).result),
+    getRepoFiles(params.nick, params.repo, finalBranch),
     {
+      enabled: !!repos.data,
       initialData: () => {
         const data = queryClient.getQueryData([
           "files",

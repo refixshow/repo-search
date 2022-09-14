@@ -1,7 +1,7 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { getUserRepos } from "../lib/axios";
 
 export const BrowseReposContainer = () => {
   const [searchParams] = useSearchParams();
@@ -22,15 +22,7 @@ export const BrowseReposContainer = () => {
 
   const { data } = useQuery(
     ["repos", params.nick, config.per_page, config.page],
-    () =>
-      axios(
-        `https://api.github.com/users/${params.nick}/repos?per_page=${config.per_page}&page=${config.page}`,
-        {
-          headers: {
-            // Authorization: "Bearer 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",
-          },
-        }
-      ).then((res) => res.data),
+    getUserRepos(params.nick, config.per_page, config.page),
     {
       keepPreviousData: true,
       onSuccess: (data) => {
@@ -40,7 +32,7 @@ export const BrowseReposContainer = () => {
           queryClient.setQueryData(["repos", params.nick], data);
         }
 
-        data.data.forEach((el: any) => {
+        data.forEach((el: any) => {
           if (!queryClient.getQueryData(["repos", params.nick, el.name])) {
             queryClient.setQueryData(["repos", params.nick, el.name], el);
           }

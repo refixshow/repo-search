@@ -1,10 +1,9 @@
-import { useState, useDeferredValue, useEffect } from "react";
-import { Box } from "@chakra-ui/react";
+import { useState, useDeferredValue } from "react";
+import { Box, Input } from "@chakra-ui/react";
 import { ChackraMotionBox } from "../lib/chakra-ui/customComponents";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { preprocessUserData } from "../utils/preprocessors";
 import { Link, useParams } from "react-router-dom";
+import { getUserData } from "../lib/axios/user";
 
 export const FindUserContainer = () => {
   const params = useParams<{ nick: string }>();
@@ -20,12 +19,7 @@ export const FindUserContainer = () => {
 
   const { data, isLoading, isFetching, isError, isSuccess } = useQuery(
     ["users", defferedNick],
-    () =>
-      axios(`https://api.github.com/users/${defferedNick}`, {
-        headers: {
-          // Authorization: "Bearer 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",
-        },
-      }).then((res) => preprocessUserData(res)),
+    getUserData(defferedNick),
     {
       initialData: () => {
         const data = client.getQueryData(["users", defferedNick]);
@@ -53,8 +47,8 @@ export const FindUserContainer = () => {
         transform="translate(-50%, -50%)"
       >
         <form>
-          <label htmlFor="nick">asas</label>
-          <input onChange={handleNick} />
+          <label htmlFor="nick">Fill in the nick</label>
+          <Input onChange={handleNick} />
         </form>
         {defferedNick.length !== 0 && (
           <div>
