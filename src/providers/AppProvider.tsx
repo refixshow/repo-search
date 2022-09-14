@@ -4,7 +4,6 @@ import { BrowserRouter } from "react-router-dom";
 import { ChakraThemeProvider } from "../lib/chakra-ui";
 import { QueryClientProvider } from "../lib/tanstack-query/";
 import { FramerRoutes } from "../lib/framer-notion/FamerRouter";
-import { ReactToastifyContainer } from "../lib/react-tostify";
 
 export const AppProvider = ({ children }: PropsWithChildren) => {
   return (
@@ -12,7 +11,6 @@ export const AppProvider = ({ children }: PropsWithChildren) => {
       <QueryClientProvider>
         <ChakraThemeProvider>
           <FramerRoutes>{children}</FramerRoutes>
-          <ReactToastifyContainer />
           <ReactQueryDevtools initialIsOpen={false} />
         </ChakraThemeProvider>
       </QueryClientProvider>

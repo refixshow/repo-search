@@ -11,10 +11,6 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       retry: 1,
-      onError: (err) => {
-        // @ts-ignore
-        console.log("on err", err.response.status);
-      },
     },
   },
 });

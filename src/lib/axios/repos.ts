@@ -10,19 +10,17 @@ export interface IPreProcessedSingleRepo {
 }
 
 const preProcessMultipleRepos = (
-  data: AxiosResponse<IUserRepo[]>,
-  per_page = 5,
-  page = 1
+  data: AxiosResponse<IUserRepo[]>
 ): IPreProcessedSingleRepo[] =>
-  data.data
-    .map(({ name, default_branch, language, description, homepage }) => ({
+  data.data.map(
+    ({ name, default_branch, language, description, homepage }) => ({
       name,
       default_branch,
       language,
       description,
       homepage,
-    }))
-    .slice((page - 1) * per_page, page * per_page);
+    })
+  );
 
 export const getMultipleUserRepos =
   (nick: string | undefined, per_page: number, page: number) => () =>
@@ -35,7 +33,7 @@ export const getMultipleUserRepos =
           },
         }
       )
-      .then((res) => preProcessMultipleRepos(res, per_page, page));
+      .then((res) => preProcessMultipleRepos(res));
 
 const preProcessSingleRepo = ({ data }: AxiosResponse<IUserRepo>) => {
   const { name, default_branch, description, homepage, language } = data;

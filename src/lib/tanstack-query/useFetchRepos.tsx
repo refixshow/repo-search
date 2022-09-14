@@ -2,9 +2,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { getMultipleUserRepos, IPreProcessedSingleRepo } from "../axios";
 
-import type { TUseFetchRepos } from "./types";
+import { AxiosError } from "axios";
 
-export const useFetchRepos: TUseFetchRepos = ({ per_page, page, nick }) => {
+import type { IUseFetchReposInput } from "./types";
+import { useToast } from "@chakra-ui/react";
+
+export const useFetchRepos = ({
+  per_page,
+  page,
+  nick,
+}: IUseFetchReposInput) => {
+  const toast = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -14,19 +22,37 @@ export const useFetchRepos: TUseFetchRepos = ({ per_page, page, nick }) => {
     {
       keepPreviousData: true,
       onSuccess: (data) => {
-        if (!data) return;
+        if (!data) return [];
 
-        if (!queryClient.getQueryData(["repos", nick])) {
+        if (
+          !queryClient.getQueryData<IPreProcessedSingleRepo[]>(["repos", nick])
+        ) {
           queryClient.setQueryData(["repos", nick], data);
         }
 
         data.forEach((el: any) => {
-          if (!queryClient.getQueryData(["repos", nick, el.name])) {
+          if (
+            !queryClient.getQueryData<IPreProcessedSingleRepo[]>([
+              "repos",
+              nick,
+              el.name,
+            ])
+          ) {
             queryClient.setQueryData(["repos", nick, el.name], el);
           }
         });
+
+        return data;
       },
-      onError: () => {
+      onError: (err: AxiosError) => {
+        if (err.response?.status === 403) {
+          toast({
+            title: "Too many requests for your IP, serving data from cache.",
+            status: "error",
+          });
+          return;
+        }
+
         navigate(`/users/${nick}?user_not_found=true`);
       },
       initialData: () => {
@@ -40,7 +66,7 @@ export const useFetchRepos: TUseFetchRepos = ({ per_page, page, nick }) => {
 
         queryClient.cancelQueries(["repos", nick, per_page, page]);
 
-        return cachedData;
+        return cachedData.slice((page - 1) * per_page, page * per_page);
       },
     }
   );
