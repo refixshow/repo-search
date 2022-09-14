@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Box,
   Center,
@@ -11,78 +9,19 @@ import {
   Input,
 } from "@chakra-ui/react";
 import { ResursiveFileList } from "../../components/ResursiveFileList";
-
-import { getRepoFiles, getSingleUserRepo } from "../../lib/axios";
 import { createFileUrl } from "./createFileUrl";
-import { IUserRepo, TPreprocessedSingleFile } from "../../lib/axios/types";
+import { useListRepoFiles } from "./hooks";
 
 export const ListRepoFilesContainer = () => {
-  const params = useParams<{ nick: string; repo: string }>();
-  const navigate = useNavigate();
-
-  const queryClient = useQueryClient();
-
-  const repos = useQuery(
-    ["repos", params.nick, params.repo],
-    getSingleUserRepo(params.nick, params.repo),
-    {
-      initialData: () => {
-        const cachedData = queryClient.getQueryData<IUserRepo>([
-          "repos",
-          params.nick,
-          params.repo,
-        ]);
-        if (!cachedData) return null;
-
-        queryClient.cancelQueries(["repos", params.nick, params.repo]);
-
-        return cachedData;
-      },
-      onError: () => {
-        navigate(`/repos/${params.nick}?repo_not_found=true`);
-      },
-    }
-  );
-
-  const [branch, setBranchName] = useState(
-    repos.data?.default_branch || "main"
-  );
-  const [finalBranch, setFinalBranchName] = useState(branch);
-
-  useEffect(() => {
-    if (repos.data?.default_branch) setBranchName(repos.data.default_branch);
-  }, [repos.data]);
-
-  const files = useQuery(
-    ["files", params.nick, params.repo, finalBranch],
-    getRepoFiles(params.nick, params.repo, finalBranch),
-    {
-      enabled: !!repos.data?.default_branch,
-      initialData: () => {
-        const data = queryClient.getQueryData<TPreprocessedSingleFile[]>([
-          "files",
-          params.nick,
-          params.repo,
-          finalBranch,
-        ]);
-
-        if (data) {
-          queryClient.cancelQueries([
-            "files",
-            params.nick,
-            params.repo,
-            finalBranch,
-          ]);
-          return queryClient.getQueryData([
-            "files",
-            params.nick,
-            params.repo,
-            finalBranch,
-          ]);
-        }
-      },
-    }
-  );
+  const {
+    nick,
+    files,
+    branch,
+    repo,
+    finalBranchSetter,
+    refetchFiles,
+    setBranchName,
+  } = useListRepoFiles();
 
   return (
     <Center position="relative" paddingY="50px">
@@ -90,7 +29,7 @@ export const ListRepoFilesContainer = () => {
         <Box>
           <Box position="sticky" top="20px">
             <Box>
-              <ChakraLink as={Link} to={`/repos/${params.nick || ""}`}>
+              <ChakraLink as={Link} to={`/repos/${nick}`}>
                 go back to repos
               </ChakraLink>
             </Box>
@@ -100,7 +39,7 @@ export const ListRepoFilesContainer = () => {
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (files.isFetching || files.isLoading) return;
-                  setFinalBranchName(branch);
+                  finalBranchSetter();
                 }}
               >
                 <Flex direction="column">
@@ -113,18 +52,7 @@ export const ListRepoFilesContainer = () => {
                     <Button w="70%" type="submit">
                       submit
                     </Button>
-                    <Button
-                      onClick={() => {
-                        queryClient.invalidateQueries([
-                          "files",
-                          params.nick,
-                          params.repo,
-                          finalBranch,
-                        ]);
-                      }}
-                      w="100%"
-                      type="button"
-                    >
+                    <Button onClick={refetchFiles} w="100%" type="button">
                       skip cache
                     </Button>
                   </Flex>
@@ -147,13 +75,7 @@ export const ListRepoFilesContainer = () => {
           <ResursiveFileList
             trees={files.data || []}
             url={(path: string, children: boolean) =>
-              createFileUrl(
-                params.nick || "",
-                path,
-                children,
-                params.repo || "",
-                branch
-              )
+              createFileUrl(nick, path, children, repo, branch)
             }
           />
         </Box>
