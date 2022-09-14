@@ -24,6 +24,7 @@
 - saving query parameters when moving between `/repos/:nick` and `/repos/:nick/:repo`
 - TESTS
 - Now you can enter /repos and see blank page
+- Cut components into smaller chunks
 
 # most important used libraries
 
