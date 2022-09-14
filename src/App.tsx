@@ -2,7 +2,6 @@ import { Route, Navigate } from "react-router-dom";
 import {
   HomeContainer,
   FindUserContainer,
-  // CheckNickContainer,
   ListRepoFilesContainer,
   BrowseReposContainer,
 } from "./containers/";
@@ -14,7 +13,6 @@ const App = () => {
       <Route path="/" element={<HomeContainer />} />
       <Route path="/users" element={<FindUserContainer />}>
         <Route path=":nick" element={<FindUserContainer />} />
-        {/* <Route path=":nick" element={<CheckNickContainer />} /> */}
       </Route>
       <Route path="/repos">
         <Route path=":nick" element={<BrowseReposContainer />} />

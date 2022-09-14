@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Button, Box } from "@chakra-ui/react";
+import { Button, Box, Text, Center, Flex } from "@chakra-ui/react";
 import { ChackraMotionBox } from "../lib/chakra-ui/customComponents";
 
 export const HomeContainer = () => {
@@ -8,25 +8,25 @@ export const HomeContainer = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       overflow="hidden"
-      position="relative"
       h="100vh"
     >
-      <Box
-        position="absolute"
-        top="50%"
-        left="50%"
-        transform="translate(-50%, -50%)"
-      >
-        <div>
-          <h1>Repo-Search</h1>
-          <p>welcome</p>
-        </div>
-        <div>
+      <Center h="100%">
+        <Flex textAlign="center" direction="column" gap="40px">
+          <div>
+            <Text as="h1" fontSize="40px" fontWeight="bold">
+              Welcome to Repo-Search!
+            </Text>
+            <Text fontSize="20px">
+              Here you can search for your profile or repos but in the wrong
+              way!
+            </Text>
+          </div>
+
           <Link to="/users">
-            <Button>start</Button>
+            <Button>start waisting time!</Button>
           </Link>
-        </div>
-      </Box>
+        </Flex>
+      </Center>
     </ChackraMotionBox>
   );
 };

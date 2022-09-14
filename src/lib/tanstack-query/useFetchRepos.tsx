@@ -49,11 +49,26 @@ export const useFetchRepos = ({
           toast({
             title: "Too many requests for your IP, serving data from cache.",
             status: "error",
+            position: "top-right",
           });
           return;
         }
 
-        navigate(`/users/${nick}?user_not_found=true`);
+        if (err.response?.status === 404) {
+          toast({
+            title: "Entered repo doesn't exist.",
+            status: "error",
+            position: "top-right",
+          });
+
+          navigate(`/users/${nick}`);
+        }
+
+        toast({
+          title: "Internal server error, contant us for help.",
+          status: "error",
+          position: "top-right",
+        });
       },
       initialData: () => {
         const cachedData = queryClient.getQueryData<IPreProcessedSingleRepo[]>([

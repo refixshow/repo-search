@@ -90,11 +90,6 @@ export const getRepoFiles =
   () =>
     axios
       .get<IRepoFiles>(
-        `https://api.github.com/repos/${nick}/${repo}/git/trees/${branch}?recursive=1`,
-        {
-          // headers: {
-          //   Authorization: "Bearer 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",
-          // },
-        }
+        `https://api.github.com/repos/${nick}/${repo}/git/trees/${branch}?recursive=1`
       )
       .then((res) => preprocessRepoFiles(res.data.tree).result);

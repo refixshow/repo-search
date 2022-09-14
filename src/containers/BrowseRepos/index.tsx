@@ -1,5 +1,5 @@
 import { useBrowseRepos } from "./hooks";
-import { useFetchRepos } from "../../lib/tanstack-query";
+
 import {
   Box,
   Text,
@@ -8,57 +8,40 @@ import {
   Link as ChakraLink,
   Button,
 } from "@chakra-ui/react";
-import { useState, useDeferredValue, useMemo } from "react";
-import { filterValuesOfArrayOfObjects } from "./filters";
-import { IPreProcessedSingleRepo } from "../../lib/axios";
-import { Link } from "react-router-dom";
 
-const useBrowseReposSearch = () => {};
+import { Link } from "react-router-dom";
+import { ChackraMotionBox } from "../../lib/chakra-ui/customComponents";
 
 export const BrowseReposContainer = () => {
   const {
     pageMetaInfo,
     actions: { setPage, setPerPage },
+    parsedRepos,
+    phrase,
+    language,
+    setLanguage,
+    setPhrase,
   } = useBrowseRepos();
-  const { data } = useFetchRepos(pageMetaInfo);
-
-  const [language, setLanguage] = useState("");
-  const [phrase, setPhrase] = useState("");
-
-  const defferedLanguage = useDeferredValue(language);
-  const defferedPhrase = useDeferredValue(phrase);
-
-  const parsedRepos = useMemo(() => {
-    if (data === undefined) return [];
-
-    if (defferedPhrase.length < 3 && defferedLanguage.length === 0) {
-      return data;
-    }
-
-    const filteredByGivenPhrase =
-      filterValuesOfArrayOfObjects<IPreProcessedSingleRepo>(
-        data,
-        defferedPhrase,
-        {
-          key: "language",
-          phrase: language,
-        }
-      );
-
-    return filteredByGivenPhrase;
-  }, [defferedLanguage, defferedPhrase, data]);
 
   return (
-    <Flex
+    <ChackraMotionBox
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      position="relative"
+      minH="100vh"
       marginX="auto"
       w="clamp(80%, 980px, max-content)"
       maxW="80%"
       paddingY="40px"
-      position="relative"
     >
       <Flex direction={["column", "column", "row"]} w="100%" gap="40px">
         <Box w={["80%", "80%", "33%"]}>
           <Flex direction="column" gap="10px" position="sticky" top="40px">
+            <Box p="1">
+              <ChakraLink as={Link} to={`/users/${pageMetaInfo.nick}`}>
+                go back to user
+              </ChakraLink>
+            </Box>
             <Box>
               <Box as="label" htmlFor="phrase-search" p="1">
                 Search by given phrase
@@ -146,9 +129,17 @@ export const BrowseReposContainer = () => {
                             {el.name}
                           </Text>
                           <Text color="gray.400" fontWeight="bold">
-                            {el.default_branch}
+                            #{el.default_branch}
                           </Text>
+                          {el.language && (
+                            <Box>
+                              <Text color="gray.400" fontWeight="bold">
+                                #{el.language}
+                              </Text>
+                            </Box>
+                          )}
                         </Box>
+
                         {el.description && (
                           <Box>
                             <Text>Description: {el.description} </Text>
@@ -177,6 +168,6 @@ export const BrowseReposContainer = () => {
           </Flex>
         </Box>
       </Flex>
-    </Flex>
+    </ChackraMotionBox>
   );
 };

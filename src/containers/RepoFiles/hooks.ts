@@ -3,8 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { getRepoFiles, getSingleUserRepo } from "../../lib/axios";
 import { IUserRepo, TPreprocessedSingleFile } from "../../lib/axios/types";
+import { useToast } from "@chakra-ui/react";
+import { AxiosError } from "axios";
 
 export const useListRepoFiles = () => {
+  const toast = useToast();
   const params = useParams<{ nick: string; repo: string }>();
   const navigate = useNavigate();
 
@@ -20,14 +23,38 @@ export const useListRepoFiles = () => {
           params.nick,
           params.repo,
         ]);
-        if (!cachedData) return null;
+        if (!cachedData) return undefined;
 
         queryClient.cancelQueries(["repos", params.nick, params.repo]);
 
         return cachedData;
       },
-      onError: () => {
-        navigate(`/repos/${params.nick}?repo_not_found=true`);
+      onError: (err: AxiosError) => {
+        if (err.response?.status === 403) {
+          toast({
+            title: "Too many requests for your IP, serving data from cache.",
+            status: "error",
+            position: "top-right",
+          });
+          return;
+        }
+
+        if (err.response?.status === 404) {
+          toast({
+            title: "Entered repo doesn't exist.",
+            status: "error",
+            position: "top-right",
+          });
+
+          navigate(`/repos/${params.nick}`);
+          return;
+        }
+
+        toast({
+          title: "Internal server error, contant us for help.",
+          status: "error",
+          position: "top-right",
+        });
       },
     }
   );

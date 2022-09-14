@@ -12,6 +12,7 @@ export interface IUserData {
   avatar_url: string;
   public_repos: number | null;
   bio: string | null;
+  html_url: string;
 }
 
 export interface IRepoFiles {

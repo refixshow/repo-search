@@ -26,12 +26,7 @@ export const getMultipleUserRepos =
   (nick: string | undefined, per_page: number, page: number) => () =>
     axios
       .get<IUserRepo[]>(
-        `https://api.github.com/users/${nick}/repos?per_page=${per_page}&page=${page}`,
-        {
-          headers: {
-            // Authorization: "Bearer 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",
-          },
-        }
+        `https://api.github.com/users/${nick}/repos?per_page=${per_page}&page=${page}`
       )
       .then((res) => preProcessMultipleRepos(res));
 
@@ -43,9 +38,5 @@ const preProcessSingleRepo = ({ data }: AxiosResponse<IUserRepo>) => {
 export const getSingleUserRepo =
   (nick: string | undefined, repo: string | undefined) => () =>
     axios
-      .get<IUserRepo>(`https://api.github.com/repos/${nick}/${repo}`, {
-        headers: {
-          // Authorization: "Bearer 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",
-        },
-      })
+      .get<IUserRepo>(`https://api.github.com/repos/${nick}/${repo}`)
       .then((res) => preProcessSingleRepo(res));
